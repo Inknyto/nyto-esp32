@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+esptool.py --chip esp32 --port /dev/ttyUSB0 write_flash -z 0x1000 ESP32_GENERIC-20240602-v1.23.0.bin

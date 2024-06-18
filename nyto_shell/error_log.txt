@@ -1,0 +1,13 @@
+I (9443) shell: $ 
+I (9443) shell: External command execution is not supported on ESP32.
+I (9453) shell: $ 
+I (9453) shell: External command execution is not supported on ESP32.
+I (9463) shell: $ 
+I (9463) shell: External command execution is not supported on ESP32.
+I (9473) shell: $ 
+I (9473) shell: External command execution is not supported on ESP32.
+I (9483) shell: $ 
+I (9483) shell: External command execution is not supported on ESP32.
+I (9493) shell: $ 
+I (9493) shell: External command execution is not supported on ESP32.
+I (9503) shell: $ 
