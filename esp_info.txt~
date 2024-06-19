@@ -1,4 +1,5 @@
 > sudo esptool.py --port /dev/ttyUSB0 erase_flash
+[sudo] password for nyto: 
 esptool.py v4.7.0
 Serial port /dev/ttyUSB0
 Connecting.....
