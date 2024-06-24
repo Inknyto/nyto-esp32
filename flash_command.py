@@ -1,0 +1,164 @@
+import os
+import curses
+from datetime import datetime
+
+# Color constants
+COLOR_SUCCESS = 1
+COLOR_WARNING = 2
+COLOR_ERROR = 3
+
+# Initialize ncurses colors
+def init_colors():
+    curses.start_color()
+    curses.init_pair(COLOR_SUCCESS, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(COLOR_WARNING, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    curses.init_pair(COLOR_ERROR, curses.COLOR_RED, curses.COLOR_BLACK)
+
+# define a funciton to print a colored string
+def print_colored(x, y, stdscr, message, color):
+    stdscr.addstr(x, y, message, curses.color_pair(color))
+    stdscr.refresh()
+
+# change the tracking directory of the project
+def choose_projects_directory(stdscr):
+    stdscr.clear()
+    stdscr.addstr(2, 2, "Enter the directory to track: ", curses.A_BOLD)
+    stdscr.refresh()
+    curses.echo()
+    directory = stdscr.getstr(2, 32).decode('utf-8')
+    curses.noecho()
+    return directory
+
+# create a new project using idf.py (espressif)
+def create_new_project(stdscr):
+    stdscr.clear()
+    stdscr.addstr(2, 2, "Enter the new project name: ", curses.A_BOLD)
+    stdscr.refresh()
+    curses.echo()
+    pjct_name = stdscr.getstr(2, 32).decode('utf-8')
+    curses.noecho()
+    os.system(f"idf.py create-project {pjct_name}")
+    os.chdir(pjct_name)
+    project_menu(stdscr, pjct_name)
+
+def project_menu(stdscr, pjct):
+    # each build type has it's own commands
+    commands = {
+            "idf.py":{
+                "b":"idf.py build",
+                "f":"sudo idf.py flash",
+                "e":"nvim main/*.c CMakeLists.txt",
+                "z":"fzf -m | xargs nvim",
+                     },
+            "flash_command.sh":{
+                "b":"echo no build scripts",
+                "f":"sudo ./flash_command.sh",
+                "e":"nvim *.sh",
+                "z":"fzf -m | xargs nvim",
+                     },
+               }
+
+
+    while True:
+        stdscr.clear()
+        stdscr.refresh()
+        stdscr.addstr(1, 2, f"Nyto Esp32 Flasher -  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", curses.A_BOLD)
+        stdscr.addstr(3, 2, "[b]uild [f]lash [s]creen [e]dit fu[z]z [d]elete [q]uit: ", curses.A_BOLD)
+        stdscr.addstr(4, 2, f"Project: {pjct} ", curses.A_BOLD)
+        stdscr.addstr(6, 2, f" ".join(os.listdir()), curses.A_BOLD)
+        
+        command = chr(stdscr.getch())
+        # back to main menu
+        if command == 'q':
+            return os.chdir("../")
+        # start screen session 
+        elif command == 's':
+            os.system("sudo screen /dev/ttyUSB0 115200")
+        # delete the project 
+        elif command == "d":
+            stdscr.clear()
+            stdscr.refresh()
+            stdscr.addstr(4, 2, f"Delete project {pjct} ?", curses.A_BOLD)
+            stdscr.addstr(6, 2, "[y]es [n]o", curses.A_BOLD)
+            resp = chr(stdscr.getch())
+            if resp == "y":
+                os.system("rm -rf *")
+                os.chdir('../')
+                os.rmdir(pjct)
+                return curses.wrapper(main_menu, os.getcwd())
+        else:
+            # execute a script based on the choice
+            if command in ["b","f","e","z"]:
+                if os.path.isfile('CMakeLists.txt'):
+                    output = os.system(commands['idf.py'][command])
+                elif os.path.isfile('flash_command.sh'):
+                    output = os.system(commands['flash_command.sh'][command])
+
+def main_menu(stdscr, directory):
+    init_colors()
+    curses.curs_set(0)
+    stdscr.clear()
+
+    os.chdir(directory)
+
+    """
+    list the projects:
+    A project must have a flash_command.sh (a script using esptool.py or
+    another flashing tool) or a CMakeLists.txt file(for idf projects)
+    Might fix this later by making it more rigid
+
+    """
+    projects = [pjct for pjct in os.listdir() 
+                if os.path.isfile(f"{pjct}/CMakeLists.txt") 
+                or os.path.isfile(f"{pjct}/flash_command.sh")]
+    while True:
+        stdscr.clear()
+        stdscr.refresh()
+
+        stdscr.addstr(1, 2, f"Nyto Esp32 Flasher -  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", curses.A_BOLD)
+
+        stdscr.addstr(3, 2, "By Inknyto", curses.A_BOLD)
+        stdscr.addstr(4, 2, f"Projects directory: {directory}", curses.A_BOLD)
+
+        # loop over the projects to display them
+        for i, pjct in enumerate(projects):
+            stdscr.addstr(i+6, 2, f"[{i}] {pjct}", curses.A_BOLD)
+        stdscr.addstr(len(projects)+7 , 2, "[s]creen [c]hange dir \n  [n]ew [q]uit: ", curses.A_BOLD)
+
+        choice = chr(stdscr.getch())
+        # case choice is in lower menu (letters)
+        if not choice.isnumeric():
+            # quit the program
+            # needs fix, because the program is recursive
+            # when it terminates, there are still running screens(curses.wrapper(menu))
+            if choice == "q":
+                exit(0)
+            # start screen session
+            elif choice == "s":
+                os.system("sudo screen /dev/ttyUSB0 115200") 
+                os.chdir(directory)
+            # change project tracking directory
+            elif choice == "c":
+                directory = choose_projects_directory(stdscr)
+                return curses.wrapper(main_menu, directory)
+            # create new idf.py project
+            elif choice == "n":
+                create_new_project(stdscr)
+                return curses.wrapper(main_menu, directory)
+        else:
+            # change directory in the selected project, call the menu
+            os.chdir(projects[int(choice)])
+            project_menu(stdscr, projects[int(choice)])
+        
+
+if __name__ == "__main__":
+    # directory = "/home/nyto/Documents/git/nyto-esp32"
+    try: 
+        directory = os.path.abspath(os.sys.argv[1])
+    except: 
+        directory = "/home/nyto/Documents/git/nyto-esp32"
+
+    os.chdir(directory)
+    curses.wrapper(main_menu, directory)
+
+

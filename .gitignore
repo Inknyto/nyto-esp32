@@ -1,3 +1,7 @@
 **/build/
 ./esp-idf-mqtt-broker/components/mongoose/examples 
 ./esp-idf-mqtt-broker/components/mongoose/test
+mongoose
+playground
+FreeRTOS-Shell
+ESP32Marauder

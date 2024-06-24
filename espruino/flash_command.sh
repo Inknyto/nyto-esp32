@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-Espruino/esp-idf/components/esptool_py/esptool/esptool.py    \
+esptool.py    \
         --chip esp32                                \
         --port /dev/ttyUSB0                         \
         --baud 921600                               \
