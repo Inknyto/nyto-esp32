@@ -1,0 +1,4 @@
+# Color constants
+COLOR_SUCCESS = 1
+COLOR_WARNING = 2
+COLOR_ERROR = 3

@@ -1,0 +1,65 @@
+import os
+import curses
+from datetime import datetime
+from utils import init_colors, print_colored, choose_projects_directory, create_new_project
+from project_menu import project_menu
+from constants import COLOR_ERROR, COLOR_SUCCESS
+
+def main_menu(stdscr, directory):
+    init_colors()
+    curses.curs_set(0)
+    stdscr.clear()
+
+    os.chdir(directory)
+
+    while True:
+        projects = [pjct for pjct in os.listdir() 
+                    if os.path.isfile(f"{pjct}/CMakeLists.txt") 
+                    or os.path.isfile(f"{pjct}/flash_command.sh")]
+        
+        stdscr.clear()
+        stdscr.refresh()
+
+        stdscr.addstr(1, 2, f"Nyto Esp32 Flasher -  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", curses.A_BOLD)
+        stdscr.addstr(3, 2, "By Inknyto", curses.A_BOLD)
+        stdscr.addstr(4, 2, f"Projects directory: {directory}", curses.A_BOLD)
+
+        for i, pjct in enumerate(projects):
+            stdscr.addstr(i+6, 2, f"[{i}] {pjct}", curses.A_BOLD)
+        stdscr.addstr(len(projects)+7, 2, "[s]creen [c]hange dir \n  [n]ew [q]uit: ", curses.A_BOLD)
+
+        choice = chr(stdscr.getch())
+        if not choice.isnumeric():
+            if choice == "q":
+                return
+            elif choice == "s":
+                curses.endwin()
+                exit_code = os.system("sudo screen /dev/ttyUSB0 115200")
+                if exit_code != 0:
+                    print(f"Error starting screen session. Exit code: {exit_code}")
+                    input("Press Enter to continue...")
+                curses.doupdate()
+                os.chdir(directory)
+            elif choice == "c":
+                new_directory = choose_projects_directory(stdscr)
+                if os.path.isdir(new_directory):
+                    directory = new_directory
+                    os.chdir(directory)
+                else:
+                    print_colored(len(projects)+9, 2, stdscr, "Invalid directory", COLOR_ERROR)
+                    stdscr.getch()
+            elif choice == "n":
+                create_new_project(stdscr)
+        else:
+            try:
+                project_index = int(choice)
+                if 0 <= project_index < len(projects):
+                    os.chdir(projects[project_index])
+                    project_menu(stdscr, projects[project_index])
+                    os.chdir(directory)
+                else:
+                    print_colored(len(projects)+9, 2, stdscr, "Invalid project number", COLOR_ERROR)
+                    stdscr.getch()
+            except ValueError:
+                print_colored(len(projects)+9, 2, stdscr, "Invalid input", COLOR_ERROR)
+                stdscr.getch()
