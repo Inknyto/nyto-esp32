@@ -7,14 +7,15 @@ import argparse
 if __name__ == "__main__":
     try:
         parser = argparse.ArgumentParser(description='This project is for automating the firmware flashing on esp32 chips')
-        parser.add_argument('directory', type=str, nargs='?', help='Directory of the esp32 projects using idf.py')
+        parser.add_argument('directory', type=str, help='Directory of the esp32 projects using idf.py')
+        # directory = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else "/home/nyto/Documents/git/nyto-esp32"
         args = parser.parse_args()
-        directory = args.directory if args.directory else "/home/nyto/Documents/git/nyto-esp32"
-
+        directory = args.directory
+        # print(directory)
         if not os.path.isdir(directory):
             print(f"Error: {directory} is not a valid directory")
             sys.exit(1)
-
+        
         os.chdir(directory)
         curses.wrapper(main_menu, directory)
     except KeyboardInterrupt:
@@ -23,4 +24,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         sys.exit(1)
-
